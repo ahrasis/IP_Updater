@@ -1,13 +1,8 @@
 <?php
 /*
 Copyright (c) 2015, Ahmad Rasyid Ismail, ahrasis@gmail.com
-Project IP Updater for ispconfig and dynamic ip users.
+Project IP Updater for ispconfig dynamic ip users
 Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
 	* Redistributions of source code must retain the above copyright notice,
 	  this list of conditions and the following disclaimer.
 	* Redistributions in binary form must reproduce the above copyright notice,
@@ -15,8 +10,6 @@ are permitted provided that the following conditions are met:
 	  and/or other materials provided with the distribution.
 	* Neither the above name nor the names of its contributors
 	  may be used to endorse or promote products derived from this software without
-	  specific prior written permission.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -46,32 +39,45 @@ if(!$ip_updater) {
 		if(!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
 			echo "Filtering failed!";  die (mysql_error());
 		} else {
-			// IPv4 is true. Get stored ip (only from ip_address column in server_ip table)
-			echo "Comparing public IP " . $public_ip . " with ";
-			$select_ip = "SELECT ip_address FROM server_ip WHERE server_id =1";
+			// IPv4 is true. Get stored ip (only from ip_address column in server_ip table) // echo "Comparing public IP " . $public_ip . " with ";
+			$select_ip = "SELECT ip_address FROM server_ip WHERE sys_userid =1";
 			$query_ip = mysql_query($select_ip);
 			list ($stored_ip) = mysql_fetch_row($query_ip);
-			echo "stored IP " . $stored_ip . ". \r\n";
+			// echo "stored IP " . $stored_ip . ". \r\n";
 			// Update stored ip only if there is a change
 			if($public_ip == $stored_ip) {
 				echo "Same IP address. No changes is made." . "\r\n"; die (mysql_error());
 			} else {
 				echo "Different IP address. Attempting updates... \r\n";
+				// Updating database
 				$update_ip = mysql_query("UPDATE `dns_rr` SET `data` = replace(`data`, '$stored_ip', '$public_ip')");
 				// $update_ip2 = mysql_query("UPDATE `sys_datalog` SET `data` = replace(`data`, '$stored_ip', '$public_ip')");
 				$update_ip3 = mysql_query("UPDATE `server_ip` SET `ip_address` = replace(`ip_address`, '$stored_ip', '$public_ip')");
+				// Updating soa zones serial and ip address assuming they are all the same.
+				foreach (glob("/etc/bind/pri.*") as $filename) {
+					$date=date_create();
+					$new_serial=date_format($date,"YmdHis"); // echo "New serial: ".$new_serial."\r\n"; to see new serial
+					$dns = dns_get_record("your.domain.tld", DNS_SOA); // print_r($dns); to check for right array
+					$old_serial=$dns[0]['serial']; // echo "Old serial: ".$old_serial."\r\n"; to see old serial number
+					$file = file_get_contents($filename);
+					if($old_serial < $serial) {
+						file_put_contents($filename, preg_replace("/$old_serial/","$new_serial",$file)); // Update serial
+					}
+					if($stored_ip != $public_ip) {
+						file_put_contents($filename, preg_replace("/$stored_ip/","$public_ip",$file)); // Update public ip
+					}
+				}
 			}
-			echo "Give sometimes for the updates. In the meantime, we restart apache. \r\n";
-			exec('service apache2 restart');
 			// Check the updates mysql_query
 			if(!($update_ip || $update_ip2 || $update_ip3)) {
 				echo "Public ip should now be the same with stored ip. :( \r\n"; die (mysql_error());
 			}
+			echo "Give sometimes for the updates. In the meantime, we restart apache. \r\n";
+			exec('service apache2 restart');
 			// Double check stored ip as update mysql_query always returns successful :(
 			$select_new_ip = "SELECT ip_address FROM server_ip WHERE sys_userid =1";
 			$query_new_ip = mysql_query($select_new_ip);
-			$fetched_new_ip = mysql_fetch_assoc($query_new_ip);
-			$new_stored_ip = $fetched_new_ip['ip_address'];
+			list ($new_stored_ip) = mysql_fetch_row($query_new_ip);
 			if ($new_stored_ip != $public_ip) {
 				echo "Updates failed! \r\n"; die (mysql_error());
 			} else {
@@ -83,4 +89,5 @@ if(!$ip_updater) {
 // Close connection
 mysql_close($ip_updater);
 echo "Closing connection... \r\n";
+exec('service apache2 restart');
 ?>
