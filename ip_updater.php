@@ -1,21 +1,15 @@
 <?php
 /*
 Copyright (c) 2015, Ahmad Rasyid Ismail, ahrasis@gmail.com
-Project IP Updater for ispconfig and ddclient users
-BSD License. All rights reserved.
-
+Project IP Updater for ispconfig and dynamic ip users.
 Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-    * Neither the above name nor the names of its contributors
-      may be used to endorse or promote products derived from this software without
-      specific prior written permission.
-
+	* Redistributions of source code must retain the above copyright notice,
+	  this list of conditions and the following disclaimer.
+	* Redistributions in binary form must reproduce the above copyright notice,
+	  this list of conditions and the following disclaimer in the documentation
+	  and/or other materials provided with the distribution.
+	* Neither the above name nor the names of its contributors
+	  may be used to endorse or promote products derived from this software without
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -30,58 +24,56 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Get access by using ispconfig default
 require_once '/usr/local/ispconfig/interface/lib/config.inc.php';
-// I think the following is only needed if this is run from control panel
-// require_once '/usr/local/ispconfig/interface/lib/app.inc.php';
 // Create and check connection to proceed
 $ip_updater = mysql_connect($conf['db_host'], $conf['db_user'], $conf['db_password']);
-if (!$ip_updater) {
+if(!$ip_updater) {
 	echo "Connection failed! \r\n"; die(mysql_connect_error());
 } else {
 	// Connection is fine. Select the database
 	$db_selection = mysql_select_db($conf['db_database'], $ip_updater);
-	if (!$db_selection) {
+	if(!$db_selection) {
 		echo "Can\'t use selected database! \r\n"; die(mysql_error());
 	} else {
 		// Databse is selected. Get public ip. Use others if this not working.
 		$public_ip = file_get_contents('http://phihag.de/ip/');
-		if (!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
+		if(!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
 			echo "Filtering failed!";  die (mysql_error());
 		} else {
-			// IPv4 is true. Extract stored ip.
+			// IPv4 is true. Get stored ip (only from ip_address column in server_ip table)
 			echo "Comparing public IP " . $public_ip . " with ";
-			$select_ip = "SELECT ip_address FROM server_ip WHERE sys_userid =1";
+			$select_ip = "SELECT ip_address FROM server_ip WHERE server_id =1";
 			$query_ip = mysql_query($select_ip);
 			list ($stored_ip) = mysql_fetch_row($query_ip);
 			echo "stored IP " . $stored_ip . ". \r\n";
 			// Update stored ip only if there is a change
-			if ($public_ip == $stored_ip) {
+			if($public_ip == $stored_ip) {
 				echo "Same IP address. No changes is made." . "\r\n"; die (mysql_error());
 			} else {
-				echo "Different IP address. Attempting updates..." . "\r\n";
-				$update_ip = mysql_query("UPDATE `dns_rr` SET `data` = replace(`data`, '.$stored_ip.', '.$public_ip.')");
-				$update_ip2 = mysql_query("UPDATE `sys_datalog` SET `data` = replace(`data`, '.$stored_ip.', '.$public_ip.')");
-				$update_ip3 = mysql_query("UPDATE `server_ip` SET `ip_address` = replace(`ip_address`, '.$stored_ip.', '.$public_ip.')");
+				echo "Different IP address. Attempting updates... \r\n";
+				$update_ip = mysql_query("UPDATE `dns_rr` SET `data` = replace(`data`, '$stored_ip', '$public_ip')");
+				// $update_ip2 = mysql_query("UPDATE `sys_datalog` SET `data` = replace(`data`, '$stored_ip', '$public_ip')");
+				$update_ip3 = mysql_query("UPDATE `server_ip` SET `ip_address` = replace(`ip_address`, '$stored_ip', '$public_ip')");
 			}
+			echo "Give sometimes for the updates. In the meantime, we restart apache. \r\n";
+			exec('service apache2 restart');
 			// Check the updates mysql_query
-			if(!$update_ip3) {
+			if(!($update_ip || $update_ip2 || $update_ip3)) {
 				echo "Public ip should now be the same with stored ip. :( \r\n"; die (mysql_error());
+			}
+			// Double check stored ip as update mysql_query always returns successful :(
+			$select_new_ip = "SELECT ip_address FROM server_ip WHERE sys_userid =1";
+			$query_new_ip = mysql_query($select_new_ip);
+			$fetched_new_ip = mysql_fetch_assoc($query_new_ip);
+			$new_stored_ip = $fetched_new_ip['ip_address'];
+			if ($new_stored_ip != $public_ip) {
+				echo "Updates failed! \r\n"; die (mysql_error());
 			} else {
-				// Double check stored ip as update mysql_query always returns successful :(
-				$select_new_ip = "SELECT ip_address FROM server_ip WHERE sys_userid =1";
-				$query_new_ip = mysql_query($select_new_ip);
-				$fetched_new_ip = mysql_fetch_assoc($query_new_ip);
-				$new_stored_ip = $fetched_new_ip['ip_address'];
-				echo "Stored ip is ";
-				if ($new_stored_ip = $stored_ip) {
-					echo "still " . $new_stored_ip . ". Updates failed! \r\n"; die (mysql_error());
-				} else {
-					echo "now " . $new_stored_ip . ". Updates are successful! Thanks God." . "\r\n";
-				}
+				echo "Updates are successful! Thanks God." . "\r\n";
 			}
 		}
 	}
 }
 // Close connection
 mysql_close($ip_updater);
-echo "Closing connection..." . "\r\n";
+echo "Closing connection... \r\n";
 ?>
