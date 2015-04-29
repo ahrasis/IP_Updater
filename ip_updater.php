@@ -1,8 +1,8 @@
 <?php
 /*
-Copyright (c) 2007, Ahmad Rasyid Ismail, ahrasis@gmail.com
+Copyright (c) 2015, Ahmad Rasyid Ismail, ahrasis@gmail.com
 Project IP Updater for ispconfig and ddclient users
-All rights reserved.
+BSD License. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
