@@ -61,18 +61,21 @@ if(!$ip_updater) {
 				$update_ip3 = mysql_query("UPDATE `server_ip` SET `ip_address` = replace(`ip_address`, '$stored_ip', '$public_ip')");
 				// Updating soa zones serial and ip address assuming they are all the same.
 				foreach (glob("/etc/bind/pri.*") as $filename) {
-					$date=date_create();
-					$new_serial=date_format($date,"YmdHis"); // echo "New serial: ".$new_serial."\r\n"; to see new serial
-					$dns = dns_get_record("your.domain.tld", DNS_SOA); // print_r($dns); to check for right array
-					$old_serial=$dns[0]['serial']; // echo "Old serial: ".$old_serial."\r\n"; to see old serial number
+					// $date=date_create();
+					// $new_serial=date_format($date,"YmdHis"); // echo "New serial: ".$new_serial."\r\n"; to see new serial
+					// $dns = dns_get_record("your.domain.tld", DNS_SOA); // print_r($dns); to check for right array
+					// $old_serial=$dns[0]['serial']; // echo "Old serial: ".$old_serial."\r\n"; to see old serial number
 					$file = file_get_contents($filename);
-					if($old_serial < $new_serial) {
-						file_put_contents($filename, preg_replace("/$old_serial/","$new_serial",$file)); // Update serial
-					}
+					// if($old_serial < $new_serial) {
+					//	file_put_contents($filename, preg_replace("/$old_serial/","$new_serial",$file)); // Update serial
+					// }
 					if($stored_ip != $public_ip) {
 						file_put_contents($filename, preg_replace("/$stored_ip/","$public_ip",$file)); // Update public ip
 					}
 				}
+				// Run resync all with modified resync.php that requires modified lib/app.inc.php
+                        	require_once '/usr/local/ispconfig/interface/web/tools/ip_updater_resync.php';
+				sleep(60);
 			}
 			// Check the updates mysql_query
 			if(!($update_ip || $update_ip2 || $update_ip3)) {
@@ -95,5 +98,5 @@ if(!$ip_updater) {
 // Close connection
 mysql_close($ip_updater);
 echo "Closing connection... \r\n";
-exec('service apache2 restart');
+exec('service apache2 restart'); // You may change this to reboot only after giving ample time for resync
 ?>
