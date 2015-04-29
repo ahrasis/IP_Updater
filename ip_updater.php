@@ -66,7 +66,7 @@ if(!$ip_updater) {
 					$dns = dns_get_record("your.domain.tld", DNS_SOA); // print_r($dns); to check for right array
 					$old_serial=$dns[0]['serial']; // echo "Old serial: ".$old_serial."\r\n"; to see old serial number
 					$file = file_get_contents($filename);
-					if($old_serial < $serial) {
+					if($old_serial < $new_serial) {
 						file_put_contents($filename, preg_replace("/$old_serial/","$new_serial",$file)); // Update serial
 					}
 					if($stored_ip != $public_ip) {
@@ -84,7 +84,7 @@ if(!$ip_updater) {
 			$select_new_ip = "SELECT ip_address FROM server_ip WHERE sys_userid =1";
 			$query_new_ip = mysql_query($select_new_ip);
 			list ($new_stored_ip) = mysql_fetch_row($query_new_ip);
-			if ($new_stored_ip != $public_ip) {
+			if ($new_stored_ip != $public_ip) && ( {
 				echo "Updates failed! \r\n"; die (mysql_error());
 			} else {
 				echo "Updates are successful! Thanks God." . "\r\n";
