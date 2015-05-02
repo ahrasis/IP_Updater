@@ -76,5 +76,5 @@ if(!$ip_updater) {
 // Lastly, we close connection and restart apache.
 mysql_close($ip_updater);
 echo "Closing connection... \r\n";
-exec('service apache2 restart');
+exec('service apache2 restart'); // Smile...
 ?>
