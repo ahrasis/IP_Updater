@@ -34,69 +34,47 @@ require_once '/usr/local/ispconfig/interface/lib/config.inc.php';
 $ip_updater = mysql_connect($conf['db_host'], $conf['db_user'], $conf['db_password']);
 if(!$ip_updater) {
 	echo "Connection failed! \r\n"; die(mysql_connect_error());
-} else {
-	// Connection is fine. Select the database
+} else { // Connection is fine. Select the database
 	$db_selection = mysql_select_db($conf['db_database'], $ip_updater);
 	if(!$db_selection) {
 		echo "Can\'t use selected database! \r\n"; die(mysql_error());
-	} else {
-		// Databse is selected. Get public ip. Use others if this not working.
+	} else { // Databse is selected. Get public ip. Use others if this not working.
 		$public_ip = file_get_contents('http://phihag.de/ip/');
 		if(!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
 			echo "Filtering failed!";  die (mysql_error());
-		} else {
-			// IPv4 is true. Get stored ip (only from ip_address column in server_ip table) // echo "Comparing public IP " . $public_ip . " with ";
-			$select_ip = "SELECT ip_address FROM server_ip WHERE sys_userid =1";
+		} else { // IPv4 is true. Important! Change to your intended server_id.
+			$select_ip = "SELECT ip_address FROM server_ip WHERE server_id =1";
 			$query_ip = mysql_query($select_ip);
-			list ($stored_ip) = mysql_fetch_row($query_ip);
-			// echo "stored IP " . $stored_ip . ". \r\n";
-			// Update stored ip only if there is a change
-			if($public_ip == $stored_ip) {
+			list ($stored_ip) = mysql_fetch_row($query_ip); // Get current stored ip
+			if($public_ip == $stored_ip) { // Compare the ip addresses
 				echo "Same IP address. No changes is made." . "\r\n"; die (mysql_error());
-			} else {
-				echo "Different IP address. Attempting updates... \r\n";
-				// Updating database
+			} else { // Update database if there is a change
 				$update_ip = mysql_query("UPDATE `dns_rr` SET `data` = replace(`data`, '$stored_ip', '$public_ip')");
-				// $update_ip2 = mysql_query("UPDATE `sys_datalog` SET `data` = replace(`data`, '$stored_ip', '$public_ip')");
-				$update_ip3 = mysql_query("UPDATE `server_ip` SET `ip_address` = replace(`ip_address`, '$stored_ip', '$public_ip')");
-				// Updating soa zones serial and ip address assuming they are all the same.
+				$update_ip3 = mysql_query("UPDATE `server_ip` SET `ip_address` = replace(`ip_address`, '$stored_ip', '$public_ip')");// Check the above process updates
+				// Check the above process updates
+				if(!($update_ip || $update_ip3)) {
+					echo "Public ip should now be the same with stored ip. :( \r\n"; die (mysql_error());
+				} // Now we update ip address in soa zone files
 				foreach (glob("/etc/bind/pri.*") as $filename) {
-					// $date=date_create();
-					// $new_serial=date_format($date,"YmdHis"); // echo "New serial: ".$new_serial."\r\n"; to see new serial
-					// $dns = dns_get_record("your.domain.tld", DNS_SOA); // print_r($dns); to check for right array
-					// $old_serial=$dns[0]['serial']; // echo "Old serial: ".$old_serial."\r\n"; to see old serial number
 					$file = file_get_contents($filename);
-					// if($old_serial < $new_serial) {
-					//	file_put_contents($filename, preg_replace("/$old_serial/","$new_serial",$file)); // Update serial
-					// }
-					if($stored_ip != $public_ip) {
-						file_put_contents($filename, preg_replace("/$stored_ip/","$public_ip",$file)); // Update public ip
-					}
+					file_put_contents($filename, preg_replace("/$stored_ip/","$public_ip",$file));
 				}
-				// Run resync all with modified resync.php that requires modified lib/app.inc.php
-                        	require_once '/usr/local/ispconfig/interface/web/tools/ip_updater_resync.php';
-				sleep(60);
-			}
-			// Check the updates mysql_query
-			if(!($update_ip || $update_ip2 || $update_ip3)) {
-				echo "Public ip should now be the same with stored ip. :( \r\n"; die (mysql_error());
-			}
-			echo "Give sometimes for the updates. In the meantime, we restart apache. \r\n";
-			exec('service apache2 restart');
-			// Double check stored ip as update mysql_query always returns successful :(
-			$select_new_ip = "SELECT ip_address FROM server_ip WHERE sys_userid =1";
+			} // Resynce data. Important! Copy resync.php to ipu_resync and app.inc.php to ipu_app.inc.php
+			// Disable admin check and tpl in ipu_resync.php and start_session() in ipu_app.inc.php.
+			// Change require once in ipu_resync.php is now changed to ipu_app.inc.php.
+			require_once 'ipu_resync.php';
+			echo "Check and resync database and soa zone files. Restart apache. \r\n";
+			// Double check to confirm stored ipis updated  as update mysql_query always returns successful :(
+			$select_new_ip = "SELECT ip_address FROM server_ip WHERE server_id =1"; // Define this similar as above
 			$query_new_ip = mysql_query($select_new_ip);
-			list ($new_stored_ip) = mysql_fetch_row($query_new_ip);
-			if ($new_stored_ip != $public_ip) && ( {
-				echo "Updates failed! \r\n"; die (mysql_error());
-			} else {
-				echo "Updates are successful! Thanks God." . "\r\n";
-			}
+			list ($new_stored_ip) = mysql_fetch_row($query_new_ip); // Get currrent stored_ip
+			if ($new_stored_ip != $public_ip) { echo "Updates failed! \r\n"; die (mysql_error()); }
+			else { echo "Updates are successful! Thanks God." . "\r\n"; }
 		}
 	}
 }
-// Close connection
+// Lastly, we close connection and restart apache.
 mysql_close($ip_updater);
 echo "Closing connection... \r\n";
-exec('service apache2 restart'); // You may change this to reboot only after giving ample time for resync
+exec('service apache2 restart');
 ?>
