@@ -39,7 +39,7 @@ if(!$ip_updater) {
 	if(!$db_selection) {
 		echo "Can\'t use selected database! \r\n"; die(mysql_error());
 	} else { // Databse is selected. Get public ip. Use others if this not working.
-		$public_ip = file_get_contents('http://phihag.de/ip/');
+		$public_ip = file_get_contents('http://ip.sch.my/');
 		if(!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
 			echo "Filtering failed!";  die (mysql_error());
 		} else { // IPv4 is true. Important! Change to your intended server_id.
