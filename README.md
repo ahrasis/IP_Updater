@@ -13,13 +13,13 @@ require_once '../../lib/ipu_app.inc.php';
 3.  In the same file, disable admin check and tpl by commenting out the lines as follows:  
 //* Check permissions for module  
 // $app->auth->check_module_permissions('admin');  
-  
+...  
 //* This is only allowed for administrators  
 // if(!$app->auth->is_admin()) die('only allowed for administrators.');  
 ...  
 // $app->tpl->setVar('msg', $msg);  
 // $app->tpl->setVar('error', $error);  
-  
+...  
 // $app->tpl_defaults();  
 // $app->tpl->pparse();  
 
