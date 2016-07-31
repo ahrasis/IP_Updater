@@ -53,7 +53,7 @@ if(!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
    Exit if the server public ip address matches i.e. the same.  */
 
 $query_ip = mysqli_query($ip_updater, 'SELECT ip_address FROM server_ip WHERE server_id =1');
-list ($stored_ip) = mysqli_fetch_row($query_ip);
+list($stored_ip) = mysqli_fetch_row($query_ip);
 if($public_ip == $stored_ip) {
     printf("\r\nThe server and its public ip addresses match. \r\nNo changes is therefore necesary.\r\n\r\n");
     exit();
@@ -78,7 +78,7 @@ foreach (glob('/etc/bind/pri.*') as $filename) {
 
 require_once 'ipu_resync.php';
 $query_new_ip = mysqli_query($ip_updater, 'SELECT ip_address FROM server_ip WHERE server_id =1');
-list ($new_stored_ip) = mysqli_fetch_row($query_new_ip);
+list($new_stored_ip) = mysqli_fetch_row($query_new_ip);
 if ($new_stored_ip != $public_ip) {
     printf("\r\nUpdates failed! \r\nUpdates failed! \r\nUpdates failed! \r\n\r\n");
     exit();
