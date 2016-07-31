@@ -31,7 +31,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Get database access by using ispconfig default configuration so no
    user and its password are disclosed. Exit if its connection failed */
 
-require_once '/usr/local/ispconfig/interface/lib/config.inc.php';
+require_once 'config.inc.php';
 $ip_updater = mysqli_connect($conf['db_host'], $conf['db_user'], $conf['db_password'], $conf['db_database']);
 if (mysqli_connect_errno()) {
     printf("Connection failed! \r\n", mysqli_connect_error());
