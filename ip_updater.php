@@ -91,7 +91,7 @@ foreach (glob('/etc/bind/pri.*') as $filename) {
    Do refer to http://ipupdater.sch.my and download or copy
    resync.php to ipu_resync,php and app.inc.php to 
    ipu_app.inc.php. Disable admin check and tpl in ipu_resync.php
-   and start_session() in  ipu_app.inc.php and change require 
+   and start_session() in ipu_app.inc.php and change require 
    once in ipu_resync.php to ipu_app.inc.php. */
 
 require_once 'ipu_resync.php';
