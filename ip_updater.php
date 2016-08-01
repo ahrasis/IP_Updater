@@ -59,7 +59,7 @@ if($public_ip == $stored_ip) {
     exit();
 }
 
-/* Else, update database and soa zone files with the new ip address */
+/* Else, update database with the new ip address */
 
 $update1 = mysqli_query($ip_updater, "UPDATE dns_rr SET data = replace(data, '$stored_ip', '$public_ip')");
 $update2 = mysqli_query($ip_updater, "UPDATE server_ip SET ip_address = replace(ip_address, '$stored_ip', '$public_ip')");
@@ -96,7 +96,8 @@ foreach (glob('/etc/bind/pri.*') as $filename) {
 
 require_once 'ipu_resync.php';
 
-/* Lastly, close database connection and restart apache. */
+/* Lastly, congratulations! All updates are successful.
+   Log it then close database connection and restart apache. */
 printf("\r\nDatabase and SOA zone files updates are successful! \r\nThanks God. Closing connection and restarting apache. \r\n\r\n");
 mysqli_close($ip_updater);
 exec('service apache2 restart');
