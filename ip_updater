@@ -1,2 +1,2 @@
 @reboot root php -q /usr/local/ispconfig/interface/lib/ip_updater.php 2>&1 | while read line; do echo `/bin/date` "$line" >> /var/log/ip_updater.log; done
-18 * * * * root php -q /usr/local/ispconfig/interface/lib/ip_updater.php 2>&1 | while read line; do echo `/bin/date` "$line" >> /var/log/ip_updater.log; done
+*/20 * * * * root php -q /usr/local/ispconfig/interface/lib/ip_updater.php 2>&1 | while read line; do echo `/bin/date` "$line" >> /var/log/ip_updater.log; done
