@@ -40,7 +40,7 @@ if (mysqli_connect_errno()) {
 
 /* Else, it works. Now get public ip from a reliable source.
    We are using this but you can define your own. But We just
-   need ipv4. So we exit if its filetering failed */
+   need ipv4. So we exit if its filtering failed */
 
 $public_ip = file_get_contents('http://ip.sch.my/');
 if(!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
