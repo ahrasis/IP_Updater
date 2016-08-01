@@ -34,7 +34,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 require_once 'config.inc.php';
 $ip_updater = mysqli_connect($conf['db_host'], $conf['db_user'], $conf['db_password'], $conf['db_database']);
 if (mysqli_connect_errno()) {
-    printf("Connection failed! \r\n", mysqli_connect_error());
+    printf("\r\nConnection failed! \r\n\r\n", mysqli_connect_error());
     exit();
 }
 
@@ -44,7 +44,7 @@ if (mysqli_connect_errno()) {
 
 $public_ip = file_get_contents('http://ip.sch.my/');
 if(!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
-    printf("IPV4 Filtering failed! \r\n");
+    printf("\r\nIPV4 for public IP filtering failed! \r\nYou may need to use other ip source.\r\n\r\n");
     exit();
 }
 
@@ -55,37 +55,49 @@ if(!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
 $query_ip = mysqli_query($ip_updater, 'SELECT ip_address FROM server_ip WHERE server_id =1');
 list($stored_ip) = mysqli_fetch_row($query_ip);
 if($public_ip == $stored_ip) {
-    printf("\r\nThe server and its public ip addresses match. \r\nNo changes is therefore necesary.\r\n\r\n");
+    printf("\r\nThe server and its public ip addresses match. \r\nNo changes is deemed necesary.\r\n\r\n");
     exit();
 }
 
 /* Else, update database and soa zone files with the new ip address */
 
-$update1 = mysqli_query($ip_updater, 'UPDATE `dns_rr` SET `data` = replace(`data`, $stored_ip, $public_ip)');
-$update2 = mysqli_query($ip_updater, 'UPDATE `server_ip` SET `ip_address` = replace(`ip_address`, $stored_ip, $public_ip)');
+$update1 = mysqli_query($ip_updater, "UPDATE dns_rr SET data = replace(data, '$stored_ip', '$public_ip')");
+$update2 = mysqli_query($ip_updater, "UPDATE server_ip SET ip_address = replace(ip_address, '$stored_ip', '$public_ip')");
+$query_new_ip = mysqli_query($ip_updater, 'SELECT ip_address FROM server_ip WHERE server_id =1');
+list($new_stored_ip) = mysqli_fetch_row($query_new_ip);
+
+if ($new_stored_ip != $public_ip) {
+    printf("\r\nDatabase updates failed! \r\nDatabase updating code may need a fix or update. \r\n\r\n");
+    exit();
+}
+
+/* Next we change soa zone files with the new ip address
+   i.e. only when the above updates are successful */ 
+
 foreach (glob('/etc/bind/pri.*') as $filename) {
 	$file = file_get_contents($filename);
 	file_put_contents($filename, preg_replace('/$stored_ip/', '$public_ip', $file));
+
+	/* Exit if SOA zone files are not updated */
+	foreach(file($filename) as $fli=>$fl) {
+		if(strpos($fl, $stored_ip)===true) {
+			printf("\r\nSOA zone files updates failed! \r\nZone files updating code may need a fix or update. \r\n\r\n");
+			exit();
+		}
+	}
 }
 
 /* Now resync so that above changes updated properly. Important! 
-   Refer to http://ipupdater.sch.my and download or copy
+   Do refer to http://ipupdater.sch.my and download or copy
    resync.php to ipu_resync,php and app.inc.php to 
    ipu_app.inc.php. Disable admin check and tpl in ipu_resync.php
    and start_session() in  ipu_app.inc.php and change require 
-   once in ipu_resync.php to ipu_app.inc.php. 
-   Then double check if the update truly works */
+   once in ipu_resync.php to ipu_app.inc.php. */
 
 require_once 'ipu_resync.php';
-$query_new_ip = mysqli_query($ip_updater, 'SELECT ip_address FROM server_ip WHERE server_id =1');
-list($new_stored_ip) = mysqli_fetch_row($query_new_ip);
-if ($new_stored_ip != $public_ip) {
-    printf("\r\nUpdates failed! \r\nUpdates failed! \r\nUpdates failed! \r\n\r\n");
-    exit();
-} else { printf("\r\nUpdates are successful! Thanks God. \r\n\r\n"); }
 
 /* Lastly, close database connection and restart apache. */
+printf("\r\nDatabase and SOA zone files updates are successful! \r\nThanks God. Closing connection and restarting apache. \r\n\r\n");
 mysqli_close($ip_updater);
-printf("\r\nClosing connection... \r\n\r\n");
 exec('service apache2 restart');
 ?>
