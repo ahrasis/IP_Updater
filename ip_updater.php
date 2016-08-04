@@ -80,7 +80,7 @@ foreach (glob('/etc/bind/pri.*') as $filename) {
 
         /* Exit if SOA zone files are not updated */
         foreach(file($filename) as $fli=>$fl) {
-                if(strpos($fl, "$stored_ip/")!==false) {
+                if(strpos($fl, "/$stored_ip/")!==false) {
                         printf("\r\nSOA zone files updates failed! \r\nZone files updating code may need a fix or update. \r\n\r\n");
                         exit();
                 }
