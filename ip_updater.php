@@ -80,7 +80,7 @@ foreach (glob('/etc/bind/pri.*') as $filename) {
 
         /* Exit if SOA zone files are not updated */
         foreach(file($filename) as $fli=>$fl) {
-                if(strpos($fl, "/$stored_ip/")!==false) {
+                if(strpos($fl, "$stored_ip")==true) {
                         printf("\r\nSOA zone files updates failed! \r\nZone files updating code may need a fix or update. \r\n\r\n");
                         exit();
                 }
@@ -96,9 +96,11 @@ foreach (glob('/etc/bind/pri.*') as $filename) {
 
 require_once 'ipu_resync.php';
 
-/* Lastly, congratulations! All updates are successful.
-   Log it then close database connection and restart apache. */
-printf("\r\nDatabase and SOA zone files updates are successful! \r\nThanks God. Closing connection and restarting apache. \r\n\r\n");
+/* Lastly, congratulations! All updates are successful. Log is
+   for error only, so we close database connection and restart
+   apache without any logging for now on. However, you may
+   enable it, by uncommenting the line below this. */
+// printf("\r\nDatabase and SOA zone files updates are successful! \r\nThanks God. Closing connection and restarting apache. \r\n\r\n");
 mysqli_close($ip_updater);
 exec('service apache2 restart');
 ?>
