@@ -75,16 +75,16 @@ if ($new_stored_ip != $public_ip) {
    i.e. only when the above updates are successful */ 
 
 foreach (glob('/etc/bind/pri.*') as $filename) {
-	$file = file_get_contents($filename);
-	file_put_contents($filename, preg_replace('/$stored_ip/', '$public_ip', $file));
+        $file = file_get_contents($filename);
+        file_put_contents($filename, preg_replace("/$stored_ip/", "$public_ip", $file));
 
-	/* Exit if SOA zone files are not updated */
-	foreach(file($filename) as $fli=>$fl) {
-		if(strpos($fl, $stored_ip)===true) {
-			printf("\r\nSOA zone files updates failed! \r\nZone files updating code may need a fix or update. \r\n\r\n");
-			exit();
-		}
-	}
+        /* Exit if SOA zone files are not updated */
+        foreach(file($filename) as $fli=>$fl) {
+                if(strpos($fl, "$stored_ip/")!==false) {
+                        printf("\r\nSOA zone files updates failed! \r\nZone files updating code may need a fix or update. \r\n\r\n");
+                        exit();
+                }
+        }
 }
 
 /* Now resync so that above changes updated properly. Important! 
