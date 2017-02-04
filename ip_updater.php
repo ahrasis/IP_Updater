@@ -28,12 +28,12 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*	Check internet access by using accessing www.google.com. Record connection error
-	and restart ip updater and if its connection failed. */
+/*	Check internet access by using accessing www.google.com. Log its 
+	error then restart ip updater if its connection failed. */
 
-require_once 'config.inc.php';
-if (!$sock = @fsockopen('www.google.com', 80, $num, $error, 5)) {
-        printf("\r\nNo connection to internet! Retry IP Updater again.\r\n");
+$sock = fsockopen('www.google.com', 80, $errno, $errstr, 10);
+if (!$sock) {
+        printf("\r\nNo connection to internet! Retry IP Updater again.\r\n, $errstr ($errno)\r\n");
         require_once 'ip_updater.php';
         exit();
 }
@@ -41,6 +41,7 @@ if (!$sock = @fsockopen('www.google.com', 80, $num, $error, 5)) {
 /*	Get database access by using ispconfig default configuration so no
 	user and its password are disclosed. Exit if its connection failed */
 
+require_once 'config.inc.php';
 $ip_updater = mysqli_connect($conf['db_host'], $conf['db_user'], $conf['db_password'], $conf['db_database']);
 if (mysqli_connect_errno()) {
         printf("\r\nConnection to ISPConfig database failed!\r\n", mysqli_connect_error());
@@ -134,11 +135,11 @@ mysqli_close($ip_updater);
 
 /*	You should define your server software to restart if it is not here. */
 
-if( strpos( $_SERVER['SERVER_SOFTWARE'], 'Apache') !== false) 
 	exec('service apache2 restart');
-if( strpos( $_SERVER['SERVER_SOFTWARE'], 'Nginx') !== false) 
+if (strpos( $_SERVER['SERVER_SOFTWARE'], 'Nginx') !== false) 
 	exec('service nginx restart');
 
-// exec('reboot');
+/* Comment this out if you do not want to reboot afterwards */
+exec('reboot');
 
 ?>
