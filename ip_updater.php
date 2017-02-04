@@ -135,8 +135,9 @@ mysqli_close($ip_updater);
 
 /*	You should define your server software to restart if it is not here. */
 
+if (strpos( $_SERVER['SERVER_SOFTWARE'], 'Apache') !== false) 
 	exec('service apache2 restart');
-if (strpos( $_SERVER['SERVER_SOFTWARE'], 'Nginx') !== false) 
+if (strpos( $_SERVER['SERVER_SOFTWARE'], 'nginx') !== false) 
 	exec('service nginx restart');
 
 /* Comment this out if you do not want to reboot afterwards */
