@@ -4,5 +4,5 @@
 
 #The new cron with sleep
 #Adjust if your reboot take longer time.
-@reboot root sleep 60; root /usr/share/ip_updater/ip_updater.sh
-*/6 * * * * root sleep 15; root /usr/share/ip_updater/ip_updater.sh
+@reboot root sleep 60; /usr/share/ip_updater/ip_updater.sh 2>&1 | while read line; do echo `/bin/date` "$line" >> /var/log/ip_updater.log; done
+*/6 * * * * root sleep 15; /usr/share/ip_updater/ip_updater.sh 2>&1 | while read line; do echo `/bin/date` "$line" >> /var/log/ip_updater.log; done
