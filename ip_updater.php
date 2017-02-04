@@ -28,14 +28,23 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/*	Check internet access by using accessing www.google.com. Record connection error
+	and restart ip updater and if its connection failed. */
+
+require_once 'config.inc.php';
+if (!$sock = @fsockopen('www.google.com', 80, $num, $error, 5)) {
+        printf("\r\nNo connection to internet! Retry IP Updater again.\r\n");
+        require_once 'ip_updater.php';
+        exit();
+}
+
 /*	Get database access by using ispconfig default configuration so no
 	user and its password are disclosed. Exit if its connection failed */
 
-require_once 'config.inc.php';
 $ip_updater = mysqli_connect($conf['db_host'], $conf['db_user'], $conf['db_password'], $conf['db_database']);
 if (mysqli_connect_errno()) {
-	printf("\r\nConnection failed! \r\n\r\n", mysqli_connect_error());
-	exit();
+        printf("\r\nConnection to ISPConfig database failed!\r\n", mysqli_connect_error());
+        exit();
 }
 
 /*	Else, it works. Now get public ip from a reliable source.
@@ -122,5 +131,14 @@ require_once 'ipu_resync.php';
 // printf("\r\nDatabase and SOA zone files updates are successful! \r\n\r\n");
 
 mysqli_close($ip_updater);
-exec('service apache2 restart');
+
+/*	You should define your server software to restart if it is not here. */
+
+if( strpos( $_SERVER['SERVER_SOFTWARE'], 'Apache') !== false) 
+	exec('service apache2 restart');
+if( strpos( $_SERVER['SERVER_SOFTWARE'], 'Nginx') !== false) 
+	exec('service nginx restart');
+
+// exec('reboot');
+
 ?>
