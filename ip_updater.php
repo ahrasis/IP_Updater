@@ -52,7 +52,7 @@ if (mysqli_connect_errno()) {
 	We are using this but you can define your own. But We just
 	need ipv4. So we exit if its filtering failed */
 
-$public_ip = file_get_contents('http://ip.sch.my/');
+$public_ip = file_get_contents('https://dynamicdns.park-your-domain.com/getip');
 if(!filter_var($public_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === true) {
 	printf("\r\nIPV4 for public IP filtering failed! \r\nYou may need to use other ip source. \r\n\r\n");
 	exit();
