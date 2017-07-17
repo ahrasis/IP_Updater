@@ -9,4 +9,3 @@ then
 else
     php -q /usr/local/ispconfig/interface/lib/ip_updater.php 2>&1 | while read line; do echo `/bin/date` "$line" >> /var/log/ip_updater.log; done
 fi
-root@tetuan:/home/abufahimatturobi# 
