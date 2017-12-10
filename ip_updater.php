@@ -1,7 +1,7 @@
 <?php
 /*
-Copyright (c) 2015, Ahmad Rasyid Ismail, ahrasis@gmail.com
-Project IP Updater for ubuntu, ispconfig 3 and dynamic ip users.
+Copyright (c) 2015-2018, Hj Ahmad Rasyid Hj Ismail, ahrasis@gmail.com
+Project IP Updater for debian and ubuntu, ispconfig 3 and dynamic ipv4 ip users.
 BSD3 License. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
