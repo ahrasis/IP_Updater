@@ -115,14 +115,23 @@ if($public_ip != $db_ip) {
 	}
 }
 
-/*	Now resync so that above changes updated properly. Important! 
-	Do refer to http://ipupdater.sch.my and download or copy
-	resync.php to ipu_resync,php and app.inc.php to 
-	ipu_app.inc.php. Disable admin check and tpl in ipu_resync.php
-	and start_session() in ipu_app.inc.php and change require 
-	once in ipu_resync.php to ipu_app.inc.php. */
+/*	Now do dns resync so that above changes updated properly. */
 
-require_once 'ipu_resync.php';
+$zones = $app->db->queryAllRecords("SELECT id,origin,serial FROM dns_soa WHERE active = 'Y'");
+if(is_array($zones) && !empty($zones)) {
+	foreach($zones as $zone) {
+		$records = $app->db->queryAllRecords("SELECT id,serial FROM dns_rr WHERE zone = ".$zone['id']." AND active = 'Y'");
+		if(is_array($records)) {
+			foreach($records as $rec) {
+				$new_serial = $app->validate_dns->increase_serial($rec["serial"]);
+				$app->db->datalogUpdate('dns_rr', "serial = '".$new_serial."'", 'id', $rec['id']);
+
+			}
+		}
+		$new_serial = $app->validate_dns->increase_serial($zone["serial"]);
+		$app->db->datalogUpdate('dns_soa', "serial = '".$new_serial."'", 'id', $zone['id']);
+	}
+}
 
 /*	Lastly, congratulations! All updates are successful. Log is
 	for error only, so we close database connection and restart
