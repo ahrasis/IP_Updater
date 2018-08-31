@@ -1,6 +1,6 @@
 <?php
 /*
-Copyright (c) 2015-2018, Hj Ahmad Rasyid Hj Ismail, ahrasis@gmail.com
+Copyright (c) 2015-2018, Hj Ahmad Rasyid Hj Ismail "ahrasis" ahrasis@gmail.com
 Project IP Updater for debian and ubuntu, ispconfig 3 and dynamic ipv4 ip users.
 BSD3 License. All rights reserved.
 
@@ -149,7 +149,7 @@ if (strpos( $_SERVER['SERVER_SOFTWARE'], 'Apache') !== false)
 if (strpos( $_SERVER['SERVER_SOFTWARE'], 'nginx') !== false) 
 	exec('service nginx restart');
 
-/* Comment this out if you do not want to reboot afterwards */
-exec('reboot');
+/* Comment this out if you want to reboot afterwards */
+// exec('reboot');
 
 ?>
