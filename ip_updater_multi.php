@@ -85,7 +85,7 @@ foreach ($binds as $bind) {
 					printf("\r\nIP update for $bind failed! \nCode may need some fixes or updates.\r\n\");
 	
 				/*	Now do dns resync so that above changes updated properly. */
-				// Firstly we deal with the serial in dns_rr table
+				// Firstly we update the serial in dns_rr table and resync
 				$dns_rr = $app->db->queryOneRecord("SELECT id, serial FROM dns_rr WHERE zone = '$zone'");
 				if(is_array($dns_rr) && !empty($dns_rr)) {
 					foreach($dns_rr as $rec) {
@@ -93,7 +93,8 @@ foreach ($binds as $bind) {
 						$app->db->datalogUpdate('dns_rr', "serial = '".$new_serial."'", 'id', $rec['id']);
 					}
 				}
-				// Now we deal with the serial in dns_soa table
+				
+				// Now we update the serial in dns_soa table and resync
 				$dns_soa = $app->db->queryOneRecord("SELECT id, serial FROM dns_soa WHERE origin LIKE '%$bind%'");
 				if(is_array($dns_soa) && !empty($dns_soa)) {
 					foreach($dns_soa as $rec) {
