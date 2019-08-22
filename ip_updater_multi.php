@@ -42,6 +42,7 @@ if (!$sock) {
 	user and its password are disclosed. Exit if its connection failed */
 
 require_once 'config.inc.php';
+require_once 'app.inc.php';
 $mysqli = new mysqli($conf['db_host'], $conf['db_user'], $conf['db_password'], $conf['db_database']);
 /* check connection */
 if ($mysqli->connect_errno) {
@@ -81,7 +82,7 @@ foreach ($binds as $bind) {
 	list($new_ip) = mysqli_fetch_row($requery_ip);
 	if ($ipv4 != $new_ip) {
 		printf("\r\nIP update for $bind failed! \nCode may need some fixes or updates. \r\n\r\n");
-		break();
+		break;
 	}
 	
 	/*	Now do dns resync so that above changes updated properly. */
@@ -89,7 +90,7 @@ foreach ($binds as $bind) {
 	$dns_rr = $app->db->queryOneRecord("SELECT id, serial FROM dns_rr WHERE zone = '$zone'");
 	if(!is_array($dns_rr) || empty($dns_rr)) {
 		printf("\r\nThe record in dns_rr table is unusable or empty. \r\n\r\n");
-		break();
+		break;
 	}
 	foreach($dns_rr as $rec) {
 		$new_serial = $app->validate_dns->increase_serial($rec["serial"]);
@@ -99,7 +100,7 @@ foreach ($binds as $bind) {
 	$dns_soa = $app->db->queryOneRecord("SELECT id, serial FROM dns_soa WHERE origin LIKE '%$bind%'");
 	if(!is_array($dns_soa) || empty($dns_soa)) {
 		printf("\r\nThe record in dns_soa table is unusable or empty. \r\n\r\n");
-		break();
+		break;
 	}
 	foreach($dns_soa as $rec) {
 		$new_serial = $app->validate_dns->increase_serial($rec["serial"]);
