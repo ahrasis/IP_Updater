@@ -81,8 +81,7 @@ foreach ($binds as $bind) {
 				// Check if this domain updated ip is the same as its public ip
 				$requery = $app->db->queryOneRecord("SELECT data FROM dns_rr WHERE name LIKE '%$bind%' AND type = 'A'");
 				list($new_ip) = mysqli_fetch_row($requery);
-				if ($ipv4 != $new_ip)
-					printf("\r\nIP update for $bind failed! \nCode may need some fixes or updates.\r\n\");
+				if ($ipv4 != $new_ip) printf("\r\n IP update failed $bind. \r\nCode may need some fixes or updates.\r\n");
 	
 				// Firstly we update the serial in dns_rr table and resync
 				$dns_rr = $app->db->queryOneRecord("SELECT id, serial FROM dns_rr WHERE zone = '$zone'");
