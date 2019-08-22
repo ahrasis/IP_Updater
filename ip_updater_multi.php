@@ -60,7 +60,7 @@ if (!is_array($binds) || empty($binds)) {
 
 // Proceed only if domain A record is available
 foreach ($binds as $bind) {
-	if (checkdnsrr($bind, 'A'))
+	if (checkdnsrr($bind, 'A')) {
 		
 		// Get cleaned domain name from $bind['origin']
 		$bind = preg_replace('/\b\.$/', '', $bind['origin']);
