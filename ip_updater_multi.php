@@ -84,9 +84,8 @@ foreach ($binds as $bind) {
 				if ($ipv4 != $new_ip)
 					printf("\r\nIP update for $bind failed! \nCode may need some fixes or updates.\r\n\");
 	
-				/*	Now do dns resync so that above changes updated properly. */
 				// Firstly we update the serial in dns_rr table and resync
-				$dns_rr = $app->db->queryOneRecord("SELECT id, serial FROM dns_rr WHERE zone = '$zone'");
+				$dns_rr = $app->db->queryOneRecord("SELECT id, serial FROM dns_rr WHERE name LIKE '%$bind%'");
 				if(is_array($dns_rr) && !empty($dns_rr)) {
 					foreach($dns_rr as $rec) {
 						$new_serial = $app->validate_dns->increase_serial($rec["serial"]);
