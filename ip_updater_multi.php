@@ -76,7 +76,7 @@ foreach ($binds as $bind) {
 
 			// Update ip in column data of dns_rr table with new ip if its public ip is different //
 			if ($ipv4 != $db_ip) {
-				$update = mysqli_query($ip_updater, "UPDATE dns_rr SET data = replace(data, '$db_ip', '$ipv4') WHERE zone = '$zone'");
+				$update = mysqli_query($mysqli, "UPDATE dns_rr SET data = replace(data, '$db_ip', '$ipv4') WHERE zone = '$zone'");
 
 				// Check if this domain updated ip is the same as its public ip
 				$requery = $app->db->queryOneRecord("SELECT data FROM dns_rr WHERE name LIKE '%$bind%' AND type = 'A'");
@@ -109,4 +109,3 @@ foreach ($binds as $bind) {
 $mysqli->close();
 
 ?>
- 
