@@ -58,12 +58,13 @@ if (!is_array($binds) || empty($binds)) {
 	exit();
 }
 
-// Proceed only if domain A record is available
 foreach ($binds as $bind) {
+
+	// Get cleaned domain name from $bind['origin']
+	$bind = preg_replace('/\b\.$/', '', $bind['origin']);
+	
+	// Proceed only if domain A record is available
 	if (checkdnsrr($bind, 'A')) {
-		
-		// Get cleaned domain name from $bind['origin']
-		$bind = preg_replace('/\b\.$/', '', $bind['origin']);
 	
 		// Get the ipv4 of this domain and proceed further only if it has one (dynamic) ip 
 		$ipv4 = gethostbynamel($bind);
