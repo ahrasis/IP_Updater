@@ -109,3 +109,4 @@ foreach ($binds as $bind) {
 $mysqli->close();
 
 ?>
+ 
