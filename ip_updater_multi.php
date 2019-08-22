@@ -34,7 +34,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 $sock = fsockopen('www.google.com', 80, $errno, $errstr, 10);
 if (!$sock) {
 	printf("\r\nNo connection to internet! Retry IP Updater again.\r\n, $errstr ($errno)\r\n");
-	require_once 'ip_updater.php';
+	require_once 'ipupdater.php';
 	exit();
 }
 
@@ -44,67 +44,65 @@ if (!$sock) {
 require_once 'config.inc.php';
 require_once 'app.inc.php';
 $mysqli = new mysqli($conf['db_host'], $conf['db_user'], $conf['db_password'], $conf['db_database']);
-/* check connection */
+
+// Check connection //
 if ($mysqli->connect_errno) {
 	printf("\r\nConnection to ISPConfig database in dns server failed!\r\n", $mysqli->connect_error);
-    exit();
+	exit();
 }
 
-/*	Get domains' details (id, origin, serial from dns_soa table*/
+// Get domains' details (id, origin, serial from dns_soa table //
 $binds = $app->db->queryAllRecords("SELECT origin FROM dns_soa WHERE active = 'Y'");
 if (!is_array($binds) || empty($binds)) {
 	printf("\r\nNo useful data available in dns_soa table or it is empty.\r\n");
-    exit();
+	exit();
 }
 
+// Proceed only if domain A record is available
 foreach ($binds as $bind) {
-	// Check if this domain has proper A record or break the loop
-	if (checkdnsrr($bind, 'A')) $ipv4 = gethostbynamel($bind);
-	else break;
+	if (checkdnsrr($bind, 'A'))
+		
+		// Get cleaned domain name from $bind['origin']
+		$bind = preg_replace('/\b\.$/', '', $bind['origin']);
 	
-	// Get the ipv4 of this domain if it has one (dynamic) ip 
-	if (!empty($ipv4[1])) break;
-	$ipv4 = gethostbyname($bind);
+		// Get the ipv4 of this domain and proceed further only if it has one (dynamic) ip 
+		$ipv4 = gethostbynamel($bind);
+		if (empty($ipv4[1])) {
+			$ipv4 = gethostbyname($bind);
+			
+			// Now get zone and data from dns_rr table
+			$query = $app->db->queryOneRecord("SELECT zone, data FROM dns_rr WHERE name LIKE '%$bind%' AND type = 'A' AND active = 'Y'");
+			$zone = $query['zone']; $db_ip = $query['data'];
+
+			// Update ip in column data of dns_rr table with new ip if its public ip is different //
+			if ($ipv4 != $db_ip) {
+				$update = mysqli_query($ip_updater, "UPDATE dns_rr SET data = replace(data, '$db_ip', '$ipv4') WHERE zone = '$zone'");
+
+				// Check if this domain updated ip is the same as its public ip
+				$requery = $app->db->queryOneRecord("SELECT data FROM dns_rr WHERE name LIKE '%$bind%' AND type = 'A'");
+				list($new_ip) = mysqli_fetch_row($requery);
+				if ($ipv4 != $new_ip)
+					printf("\r\nIP update for $bind failed! \nCode may need some fixes or updates.\r\n\");
 	
-	// Now get zone and data from dns_rr table
-	$query_ip = $app->db->queryOneRecord("SELECT zone, data FROM dns_rr WHERE name LIKE '%$bind%' AND type = 'A' AND active = 'Y'");
-	
-	// Process $query_ip to define $zone and $db_ip if its rows are not empty
-	if ($query_ip->num_rows = 0) break;
-	while($row = $query_ip->fetch_assoc()) $zone = $row['zone']; $db_ip = $row['data'];
-	
-	/* Update ip in column data of dns_rr table with new ip if its public ip is different */
-	if ($ipv4 == $db_ip) break;
-	$update_ip = mysqli_query($ip_updater, "UPDATE dns_rr SET data = replace(data, '$db_ip', '$ipv4') WHERE zone = '$zone'");
-	
-	// Check if this domain updated ip is the same as its public ip
-	$requery_ip = $app->db->queryOneRecord("SELECT data FROM dns_rr WHERE name LIKE '%$bind%' AND type = 'A'");
-	list($new_ip) = mysqli_fetch_row($requery_ip);
-	if ($ipv4 != $new_ip) {
-		printf("\r\nIP update for $bind failed! \nCode may need some fixes or updates. \r\n\r\n");
-		break;
-	}
-	
-	/*	Now do dns resync so that above changes updated properly. */
-	// Firstly we deal with the serial in dns_rr table
-	$dns_rr = $app->db->queryOneRecord("SELECT id, serial FROM dns_rr WHERE zone = '$zone'");
-	if(!is_array($dns_rr) || empty($dns_rr)) {
-		printf("\r\nThe record in dns_rr table is unusable or empty. \r\n\r\n");
-		break;
-	}
-	foreach($dns_rr as $rec) {
-		$new_serial = $app->validate_dns->increase_serial($rec["serial"]);
-		$app->db->datalogUpdate('dns_rr', "serial = '".$new_serial."'", 'id', $rec['id']);
-	}
-	// Now we deal with the serial in dns_soa table
-	$dns_soa = $app->db->queryOneRecord("SELECT id, serial FROM dns_soa WHERE origin LIKE '%$bind%'");
-	if(!is_array($dns_soa) || empty($dns_soa)) {
-		printf("\r\nThe record in dns_soa table is unusable or empty. \r\n\r\n");
-		break;
-	}
-	foreach($dns_soa as $rec) {
-		$new_serial = $app->validate_dns->increase_serial($rec["serial"]);
-		$app->db->datalogUpdate('dns_soa', "serial = '".$new_serial."'", 'id', $rec['id']);
+				/*	Now do dns resync so that above changes updated properly. */
+				// Firstly we deal with the serial in dns_rr table
+				$dns_rr = $app->db->queryOneRecord("SELECT id, serial FROM dns_rr WHERE zone = '$zone'");
+				if(is_array($dns_rr) && !empty($dns_rr)) {
+					foreach($dns_rr as $rec) {
+						$new_serial = $app->validate_dns->increase_serial($rec["serial"]);
+						$app->db->datalogUpdate('dns_rr', "serial = '".$new_serial."'", 'id', $rec['id']);
+					}
+				}
+				// Now we deal with the serial in dns_soa table
+				$dns_soa = $app->db->queryOneRecord("SELECT id, serial FROM dns_soa WHERE origin LIKE '%$bind%'");
+				if(is_array($dns_soa) && !empty($dns_soa)) {
+					foreach($dns_soa as $rec) {
+						$new_serial = $app->validate_dns->increase_serial($rec["serial"]);
+						$app->db->datalogUpdate('dns_soa', "serial = '".$new_serial."'", 'id', $rec['id']);
+					}
+				}
+			}
+		}
 	}
 }
 
