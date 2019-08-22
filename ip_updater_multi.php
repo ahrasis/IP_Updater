@@ -93,7 +93,7 @@ foreach ($binds as $bind) {
 				}
 				
 				// Now we update the serial in dns_soa table and resync
-				$dns_soa = $app->db->queryOneRecord("SELECT id, serial FROM dns_soa WHERE origin LIKE '%$bind%'");
+				$dns_soa = $app->db->queryOneRecord("SELECT id, origin, serial FROM dns_soa WHERE origin LIKE '%$bind%'");
 				if(is_array($dns_soa) && !empty($dns_soa)) {
 					foreach($dns_soa as $rec) {
 						$new_serial = $app->validate_dns->increase_serial($rec["serial"]);
