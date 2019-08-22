@@ -52,7 +52,7 @@ if ($mysqli->connect_errno) {
 /*	Get domains' details (id, origin, serial from dns_soa table*/
 $binds = $app->db->queryAllRecords("SELECT origin FROM dns_soa WHERE active = 'Y'");
 if (!is_array($binds) || empty($binds)) {
-	printf("\r\nNo useful data available in dns_soa table.\r\n");
+	printf("\r\nNo useful data available in dns_soa table or it is empty.\r\n");
     exit();
 }
 
@@ -77,10 +77,10 @@ foreach ($binds as $bind) {
 	$update_ip = mysqli_query($ip_updater, "UPDATE dns_rr SET data = replace(data, '$db_ip', '$ipv4') WHERE zone = '$zone'");
 	
 	// Check if this domain updated ip is the same as its public ip
-	$query_ip = $app->db->queryOneRecord("SELECT data FROM dns_rr WHERE name LIKE '%$bind%' AND type = 'A'");
-	list($new_ip) = mysqli_fetch_row($query_new_ip);
-	if ($public_ip != $db_new_ip) {
-		printf("\r\nDatabase updates failed! \r\nDatabase updating code may need a fix or update. \r\n\r\n");
+	$requery_ip = $app->db->queryOneRecord("SELECT data FROM dns_rr WHERE name LIKE '%$bind%' AND type = 'A'");
+	list($new_ip) = mysqli_fetch_row($requery_ip);
+	if ($ipv4 != $new_ip) {
+		printf("\r\nIP update for $bind failed! \nCode may need some fixes or updates. \r\n\r\n");
 		break();
 	}
 	
